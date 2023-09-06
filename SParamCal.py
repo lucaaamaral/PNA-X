@@ -83,14 +83,10 @@ def main():
 
     session = PNA.initiate_comms()
 
-    session.timeout = 12000
-    session.write_termination = ''
 
     print(f'\nConnected equipment identification: {PNA.identity(session)}\n')
     # session.write("*RST")
     session.write("*CLS")
-
-    # print(f'Parameter catalog: {session.query("CALCulate1:PARameter:CATalog?")}')
 
     session.write("CALCulate:PARameter:DELete:ALL")
 
@@ -112,9 +108,6 @@ def main():
     print_params(session)
 
     sys.exit()
-
-    session.clear()
-
 
 if __name__ == "__main__":
     main()

@@ -13,7 +13,10 @@ def initiate_comms(VISA_ADDRESS: str='TCPIP0::A-N5241A-11745.local::hislip0::INS
             print(f"\t{resource}")
         VISA_ADDRESS=input(f"Copy and paste one of the above available devices:\n\t-> ")
     try:
-        return visa.ResourceManager().open_resource(VISA_ADDRESS)
+        session = visa.ResourceManager().open_resource(VISA_ADDRESS)
+        session.timeout = 12000
+        session.write_termination = ''
+        return session
     except visa.errors.VisaIOError as e:
         print(f"Selected address not found, ERROR: {e}")
         sys.exit()
