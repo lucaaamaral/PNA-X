@@ -100,16 +100,6 @@ def main():
 
     session = PNA.initiate_comms()
 
-
-    print(f'\nConnected equipment identification: {PNA.identity(session)}\n')
-    # session.write("*RST")
-    session.write("*CLS")
-
-    session.write("CALCulate:PARameter:DELete:ALL")
-
-    if calibrate:
-        PNA.resource_status(session) 
-     
     start_freq = 2000000000
     stop_freq = 3000000000
     sweep_pt = 201

@@ -85,11 +85,6 @@ def plot_data(session: visa.resources.Resource, freq: int,
 
 def main() -> None:
     session = PNA.initiate_comms()
-    print(f'\nConnected equipment identification: {PNA.identity(session)}\n')
-    # session.write("*RST")
-    session.write("*CLS")
-    session.write("CALCulate:PARameter:DELete:ALL")
-    PNA.resource_status(session)
     sweep_power(session, frequency=2400000000, start_power=0, stop_power=6)
     PNA.resource_status(session)
     parameter_config(session)

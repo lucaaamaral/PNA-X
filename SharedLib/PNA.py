@@ -16,6 +16,11 @@ def initiate_comms(VISA_ADDRESS: str='TCPIP0::A-N5241A-11745.local::hislip0::INS
         session = visa.ResourceManager().open_resource(VISA_ADDRESS)
         session.timeout = 12000
         session.write_termination = ''
+        print(f'\nConnected equipment identification: {identity(session)}\n')
+        # session.write("*RST")
+        session.write("*CLS")
+        session.write("CALCulate:PARameter:DELete:ALL")
+        resource_status(session)
         return session
     except visa.errors.VisaIOError as e:
         print(f"Selected address not found, ERROR: {e}")
