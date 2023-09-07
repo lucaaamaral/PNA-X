@@ -33,22 +33,24 @@ def parameter_config(session: visa.resources.Resource,
 
 def guided_calibration(session: visa.resources.Resource) -> None:
 
-    connectors = session.query("SENSe1:CORRection:COLLect:GUIDed:CONN:CAT?").split(", ")
-    # connectors = connectors.split(", ")
+    connectors = session.query("SENSe1:CORRection:COLLect:GUIDed:CONN:CAT?").replace('"', '').split(", ")
     for i in [1, 2, 3, 4]:
 
         print(f"Connectors available for PORT {i}:")
         for connector in connectors:
             print(f"\t{connector}")
 
-        selected_connector=input(f"Copy and paste one of the above available connectors for PORT:\n\t-> ")
-        print(f"Calibration kits available for PORT {i}:")
-        for cal_kit in session.query(f'SENS1:CORR:COLL:GUID:CKIT:CAT? "{selected_connector}"').split(", "):
-            print(cal_kit)
-        selected_cal_kit=input("Copy and paste one of the above available calibration kits for PORT:\n\t-> ")
-
+        selected_connector=input(f"Copy and paste one of the above available connectors for PORT {i}:\n\t-> ") # TODO: test if {i} works
         session.write(f'SENSe1:CORRection:COLLect:GUIDed:CONNector:PORT{i}:SELect "{selected_connector}"')
-        session.write(f'SENSe1:CORRection:COLLect:GUIDed:CKIT:PORT{i} "{selected_cal_kit}"')
+        
+        cal_kit = session.query(f'SENS1:CORR:COLL:GUID:CKIT:CAT? "{selected_connector}"').replace('"', '').split(", ")
+        if (len(cal_kit)!=0):
+            print(f"Calibration kits available for PORT {i}:")
+            for c_kit in cal_kit:
+                print(c_kit)
+            selected_cal_kit=input(f"Copy and paste one of the above available calibration kits for PORT {i}:\n\t-> ") # TODO: test {i} if works
+
+            session.write(f'SENSe1:CORRection:COLLect:GUIDed:CKIT:PORT{i} "{selected_cal_kit}"')
     
     session.write("SENSe1:CORRection:PREFerence:ECAL:ORIentation:STATe 0")
     session.write("SENSe1:CORRection:COLLect:GUIDed:INITiate")
