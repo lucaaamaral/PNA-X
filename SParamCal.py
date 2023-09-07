@@ -83,6 +83,17 @@ def print_params(session: visa.resources.Resource):
         print(data)
         PNA.resource_status(session)
     
+def save_cal_set( session: visa.resources.Resource, 
+                save: bool = False, my_cal_set: str = "visa_calibration") -> None:
+    
+    # TODO: test is this funcionality works
+    cal_set_names = session.query("SENSe1:CORRection:CSET:CATalog? NAME").replace('"', '').split(", ")
+    if my_cal_set in cal_set_names:
+        session.write(f"SENSe1:CORRection:CSET:DELete '{my_cal_set}'")
+        PNA.resource_status(session)
+    session.write(f"SENSe1:CORRection:CSET:COPY '{my_cal_set}'")
+    PNA.resource_status(session)
+
 def main():
 
     calibrate = True
@@ -123,6 +134,7 @@ def main():
 
     print_params(session)
 
+    save_cal_set(session, False, "todaycal")
     sys.exit()
 
 if __name__ == "__main__":
