@@ -70,6 +70,19 @@ def plot_data(session: visa.resources.Resource, freq: int,
     plt.title("Compression point")
     plt.legend()
     plt.show()
+
+    timestamp = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M")
+    filename = f"{timestamp}-measurement.txt"
+
+    with open(filename, "w") as file:
+        file.write(f"VAR\tFREQ(real)=\t{freq:.2e}\n")
+        file.write(f"BEGIN\tmeasure-{timestamp}\n")
+        file.write(f"%\tCOLUMN1_m(real)\tCOLUMN2_m(real)\n")
+        for i in range(len(data)):
+                file.write(f"\t{power[i]:.3e}\t{data[i]:.3e}\n")
+        file.write(f"END\n")
+
+
 def main() -> None:
     session = PNA.initiate_comms()
     print(f'\nConnected equipment identification: {PNA.identity(session)}\n')
