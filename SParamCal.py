@@ -6,12 +6,16 @@ from SharedLib import PNA
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s:%(funcName)s:%(lineno)d - %(levelname)s - %(message)s")
 logging.root.name="SParamCal.py"
 
-def parameter_config(session: visa.resources.Resource, num: int, name: str, meas: str) -> None:
+def parameter_config(session: visa.resources.Resource, 
+                     num: int, name: str, meas: str, 
+                     freq_start: float = 2000000000.0, 
+                     freq_stop:float = 3000000000.0,
+                     sweep_points = 201, amplitude_dB:float=-20.0) -> None:
     session.write("SENSe1:SWEep:TYPE LINear")
-    session.write("SENSe1:FREQuency:STARt 2000000000.000000")
-    session.write("SENSe1:FREQuency:STOP 3000000000.000000")
+    session.write(f"SENSe1:FREQuency:STARt {freq_start}") # TODO: test if works
+    session.write(f"SENSe1:FREQuency:STOP {freq_stop}") # TODO: test if works
     PNA.resource_status(session) 
-    session.write("SENSe1:SWEep:POINTs 201")
+    session.write(f"SENSe1:SWEep:POINTs {sweep_points}")
     PNA.resource_status(session) 
 
     session.write(f"CALCulate1:PARameter:DEFine:EXTended '{name}','{meas}'")
@@ -21,9 +25,9 @@ def parameter_config(session: visa.resources.Resource, num: int, name: str, meas
     session.write(f"CALCulate1:PARameter:SELect '{name}'")
     session.write("CALCulate1:FORMat MLOGarithmic")
     PNA.resource_status(session) 
-    session.write("SOURce1:POWer1:LEVel:IMMediate:AMPLitude -20.000000")
-    session.write("SENSe1:BANDwidth:RESolution 10000.000000")
-    session.write("SENSe1:AVERage:COUNt 20")
+    session.write(f"SOURce1:POWer1:LEVel:IMMediate:AMPLitude {amplitude_dB}") # TODO: test if works
+    session.write(f"SENSe1:BANDwidth:RESolution 10000.000000") # TODO: magic value
+    session.write(f"SENSe1:AVERage:COUNt 20")
     session.write("SENSe1:AVERage:STATe 1")
     PNA.resource_status(session) 
 
@@ -93,13 +97,23 @@ def main():
     if calibrate:
         PNA.resource_status(session) 
      
-    parameter_config(session, 1, "gain", 'S21')
-    parameter_config(session, 2, "InputRL", 'S11')
-    parameter_config(session, 3, "loss", 'S12')
-    parameter_config(session, 4, "OutputRL", 'S22')
+    start_freq = 2000000000
+    stop_freq = 3000000000
+    sweep_pt = 201
+    dB_amp = -20
 
-    print(f'Parameter catalog: {session.query("CALCulate1:PARameter:CATalog?")}')
-
+    parameter_config(session, 1, "gain", 'S21', 
+                     start_freq, stop_freq,
+                     sweep_pt, dB_amp)
+    parameter_config(session, 2, "InputRL", 'S11',
+                     start_freq, stop_freq, 
+                     sweep_pt, dB_amp)
+    parameter_config(session, 3, "loss", 'S12',
+                     start_freq, stop_freq, 
+                     sweep_pt, dB_amp)
+    parameter_config(session, 4, "OutputRL", 'S22',
+                     start_freq, stop_freq, 
+                     sweep_pt, dB_amp)
 
     if calibrate:
         guided_calibration(session)

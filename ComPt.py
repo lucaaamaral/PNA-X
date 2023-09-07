@@ -55,7 +55,7 @@ def main() -> None:
     session.write("*CLS")
     session.write("CALCulate:PARameter:DELete:ALL")
     PNA.resource_status(session)
-    sweep_power(session)
+    sweep_power(session, frequency=2400000000, start_power=0, stop_power=6)
     PNA.resource_status(session)
     parameter_config(session)
     PNA.resource_status(session)
