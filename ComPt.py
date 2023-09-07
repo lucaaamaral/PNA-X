@@ -3,6 +3,8 @@ import sys
 import logging
 from SharedLib import PNA
 import matplotlib.pyplot as plt
+from datetime import datetime
+import time
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s:%(funcName)s:%(lineno)d - %(levelname)s - %(message)s")
 logging.root.name="ComPt.py"
@@ -24,19 +26,19 @@ def parameter_config(session: visa.resources.Resource) -> None:
     PNA.resource_status(session)
     session.write("DISPlay:WINDow1:TRACe1:Y:SCALe:AUTO")
     PNA.resource_status(session)
-    session.write("SENSe1:AVERage:COUNt 4") # TODO: magic val
+    session.write("SENSe1:AVERage:COUNt 4") # TODO: magic value
     session.write("SENSe1:AVERage:STATe 1")
     PNA.resource_status(session)
     session.write("CALCulate1:MARKer:REFerence:STATe 1")
     PNA.resource_status(session)
-    session.write("CALCulate1:MARKer10:X -20")
-    MarkerX10 = session.query("CALCulate1:MARKer10:X?")
-    MarkerY10 = session.query("CALCulate1:MARKer10:Y?")
+    session.write(f"CALCulate1:MARKer10:X MIN") # TODO: magic value
+    MarkerX10 = session.query("CALCulate1:MARKer10:X?") # pcap shows -20
+    MarkerY10 = session.query("CALCulate1:MARKer10:Y?") # pcap shows -1.589, 0
     PNA.resource_status(session)
     session.write("CALCulate1:MARKer:STATe 1")
     PNA.resource_status(session)
     session.write("CALCulate1:MARKer1:FUNCtion:SELect TARG")
-    session.write("CALCulate1:MARKer1:TARGet -2.589769") # TODO: magic number
+    session.write("CALCulate1:MARKer1:TARGet -2.589769") # TODO: magic number / MarkerY10-1
     session.write("CALCulate1:MARKer1:FUNCtion:TRACking 1")
     print(f'Marker X?{session.query("CALCulate1:MARKer1:X?")}')
     print(f'Marker Y?{session.query("CALCulate1:MARKer1:Y?")}')

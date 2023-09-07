@@ -27,7 +27,7 @@ def parameter_config(session: visa.resources.Resource,
     PNA.resource_status(session) 
     session.write(f"SOURce1:POWer1:LEVel:IMMediate:AMPLitude {amplitude_dB}") # TODO: test if works
     session.write(f"SENSe1:BANDwidth:RESolution 10000.000000") # TODO: magic value
-    session.write(f"SENSe1:AVERage:COUNt 20")
+    session.write(f"SENSe1:AVERage:COUNt 20") # TODO: magic value
     session.write("SENSe1:AVERage:STATe 1")
     PNA.resource_status(session) 
 
@@ -84,7 +84,7 @@ def print_params(session: visa.resources.Resource):
         PNA.resource_status(session)
     
 def save_cal_set( session: visa.resources.Resource, 
-                save: bool = False, my_cal_set: str = "visa_calibration") -> None:
+                my_cal_set: str = "visa_calibration") -> None:
     
     # TODO: test is this funcionality works
     cal_set_names = session.query("SENSe1:CORRection:CSET:CATalog? NAME").replace('"', '').split(", ")
@@ -124,7 +124,7 @@ def main():
 
     print_params(session)
 
-    save_cal_set(session, False, "todaycal")
+    # save_cal_set(session, "todaycal")
     sys.exit()
 
 if __name__ == "__main__":
