@@ -4,9 +4,13 @@ import logging
 
 logger = logging.getLogger("PNA.py")
 
+def identity(session: visa.resources.Resource) -> str:
+    return session.query("*IDN?")
+
 def initiate_comms(VISA_ADDRESS: str='TCPIP0::A-N5241A-11745.local::hislip0::INSTR') -> visa.resources.Resource:
+    
     logger.info("Initiating connection to the instrument.")
-    print("Initiating connection to the instrument.")
+    
     if ( VISA_ADDRESS == None):
         print("Resources available:")
         for resource in visa.ResourceManager().list_resources():
@@ -26,9 +30,6 @@ def initiate_comms(VISA_ADDRESS: str='TCPIP0::A-N5241A-11745.local::hislip0::INS
         print(f"Selected address not found, ERROR: {e}")
         sys.exit()
 
-def identity(session: visa.resources.Resource) -> str:
-    return session.query("*IDN?")
-
 def resource_status(session: visa.resources.Resource):
     #TODO: implement rest of messages logic annd threat it properly
     bitmap = {
@@ -46,36 +47,30 @@ def resource_status(session: visa.resources.Resource):
         pass
     elif (status & bitmap["error"]):
         error = session.query("SYSTem:ERRor?")
-        print(f"An error hass been found: {error}")
-        print("Exiting the code")
+        logger.error(f"An error hass been found: {error}\nExiting the code")
+        session.resource_manager.close() # TODO: test
         sys.exit()
     elif (status & bitmap["questionable summary"]):
-        print("resource_status: questionable summary")
+        logger.error("resource_status: questionable summary")
         pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
         sys.exit()
     elif (status & bitmap["message available"]):
-        print("resource_status: message available")
+        logger.error("resource_status: message available")
         pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
         sys.exit()
     elif (status & bitmap["standard event"]):
-        print("resource_status: standard event")
+        logger.error("resource_status: standard event")
         pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
         sys.exit()
     elif (status & bitmap["request service"]):
-        print("resource_status: request service")
+        logger.error("resource_status: request service")
         pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
         sys.exit()
     elif (status & bitmap["operation register"]):
-        print("resource_status: operation register")
+        logger.error("resource_status: operation register")
         pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
         sys.exit()
     else:
-        print(f"resource_status: wrong status message recceived: '{status}', please verify")
+        logger.error(f"resource_status: wrong status message recceived: '{status}', please verify")
         pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
         sys.exit()

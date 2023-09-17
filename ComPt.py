@@ -63,18 +63,18 @@ def plot_data(session: visa.resources.Resource, freq: int,
         ComPt.append(data[0]-1)
         power.append(start_power + delta*i)
 
-    print(data)
-
     plt.plot(power, data, label="measured gain")
     plt.plot(power, ComPt, label="compression target")
     plt.xlabel(f"Power (dBm)")
     plt.ylabel("Gain")
     plt.title("Compression point")
     plt.legend()
-    plt.show()
 
     timestamp = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M")
     filename = f"{timestamp}-measurement.txt"
+
+    plt.savefig(f"{timestamp}-measurement.png")
+    plt.show()
 
     with open(filename, "w") as file:
         file.write(f"VAR\tFREQ(real)=\t{freq:.2e}\n")
@@ -86,11 +86,17 @@ def plot_data(session: visa.resources.Resource, freq: int,
 
 
 def main() -> None:
+
+    start_pow = -10
+    end_pow = 7
+    offset = 3
+
     session = PNA.initiate_comms()
-    sweep_power(session, frequency=2400000000, start_power=0, stop_power=6)
+    sweep_power(session, frequency=2400000000, start_power=start_pow, stop_power=end_pow)
     PNA.resource_status(session)
     parameter_config(session)
     PNA.resource_status(session)
-    plot_data(session, 2400000000, start_power=0, stop_power=6, meas_offset=3.25)
+    plot_data(session, 2400000000, start_power=start_pow, stop_power=end_pow, meas_offset=offset)
+
 if __name__ == "__main__":
     main()

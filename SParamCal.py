@@ -12,8 +12,8 @@ def parameter_config(session: visa.resources.Resource,
                      freq_stop:float = 3000000000.0,
                      sweep_points = 201, amplitude_dB:float=-20.0) -> None:
     session.write("SENSe1:SWEep:TYPE LINear")
-    session.write(f"SENSe1:FREQuency:STARt {freq_start}") # TODO: test if works
-    session.write(f"SENSe1:FREQuency:STOP {freq_stop}") # TODO: test if works
+    session.write(f"SENSe1:FREQuency:STARt {freq_start}")
+    session.write(f"SENSe1:FREQuency:STOP {freq_stop}")
     PNA.resource_status(session) 
     session.write(f"SENSe1:SWEep:POINTs {sweep_points}")
     PNA.resource_status(session) 
@@ -25,7 +25,7 @@ def parameter_config(session: visa.resources.Resource,
     session.write(f"CALCulate1:PARameter:SELect '{name}'")
     session.write("CALCulate1:FORMat MLOGarithmic")
     PNA.resource_status(session) 
-    session.write(f"SOURce1:POWer1:LEVel:IMMediate:AMPLitude {amplitude_dB}") # TODO: test if works
+    session.write(f"SOURce1:POWer1:LEVel:IMMediate:AMPLitude {amplitude_dB}")
     session.write(f"SENSe1:BANDwidth:RESolution 10000.000000") # TODO: magic value
     session.write(f"SENSe1:AVERage:COUNt 20") # TODO: magic value
     session.write("SENSe1:AVERage:STATe 1")
@@ -40,15 +40,15 @@ def guided_calibration(session: visa.resources.Resource) -> None:
         for connector in connectors:
             print(f"\t{connector}")
 
-        selected_connector=input(f"Copy and paste one of the above available connectors for PORT {i}:\n\t-> ") # TODO: test if {i} works
+        selected_connector=input(f"Copy and paste one of the above available connectors for PORT {i}:\n\t-> ")
         session.write(f'SENSe1:CORRection:COLLect:GUIDed:CONNector:PORT{i}:SELect "{selected_connector}"')
         
-        cal_kit = session.query(f'SENS1:CORR:COLL:GUID:CKIT:CAT? "{selected_connector}"').replace('"', '').split(", ")
-        if (len(cal_kit)!=0):
+        cal_kit = session.query(f'SENS1:CORR:COLL:GUID:CKIT:CAT? "{selected_connector}"').replace('"', '').replace('\n', '').split(", ")
+        if (cal_kit!=['']):
             print(f"Calibration kits available for PORT {i}:")
             for c_kit in cal_kit:
                 print(c_kit)
-            selected_cal_kit=input(f"Copy and paste one of the above available calibration kits for PORT {i}:\n\t-> ") # TODO: test {i} if works
+            selected_cal_kit=input(f"Copy and paste one of the above available calibration kits for PORT {i}:\n\t-> ")
 
             session.write(f'SENSe1:CORRection:COLLect:GUIDed:CKIT:PORT{i} "{selected_cal_kit}"')
     
@@ -86,8 +86,7 @@ def print_params(session: visa.resources.Resource):
 def save_cal_set( session: visa.resources.Resource, 
                 my_cal_set: str = "visa_calibration") -> None:
     
-    # TODO: test is this funcionality works
-    cal_set_names = session.query("SENSe1:CORRection:CSET:CATalog? NAME").replace('"', '').split(", ")
+    cal_set_names = session.query("SENSe1:CORRection:CSET:CATalog? NAME").replace('"', '').replace('\n', '').split(",")
     if my_cal_set in cal_set_names:
         session.write(f"SENSe1:CORRection:CSET:DELete '{my_cal_set}'")
         PNA.resource_status(session)
