@@ -2,7 +2,6 @@ import socket
 import signal
 import time
 from threading import Thread
-# import os
 
 shutdown_requested = False
 
@@ -29,7 +28,6 @@ class SimpleApi:
         'POST': POST_req
     }
 
-
     def __init__(self, host_addr:str='0.0.0.0', port:int = 8000, load_size:int = 2048, max_connections = 5):
 
         self.max_connections = max_connections
@@ -37,7 +35,7 @@ class SimpleApi:
         self.port = port
         self.load_size = load_size
         self.setup_server()
-        
+
     def setup_server(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -58,8 +56,14 @@ class SimpleApi:
             self.methods[method][endpoint] = function
         except:
             raise Exception(f"The method '{method}' provided is not allowed")
-        
+    
     def begin_workers(self):
+        
+        self.thread = Thread(target=self.manage_workers)
+        # self.thread.daemon = True
+        self.thread.start()
+
+    def manage_workers(self):
         i=0
         active_thread = []
         while not shutdown_requested:
@@ -103,9 +107,7 @@ class SimpleApi:
         except socket.timeout:
             print(f"Error timed out: {socket.timeout}")
         except OSError:
-            print(f"OSError: {OSError}")
-            raise Exception(OSError)
-        print("Exiting 'handle_connection()'")
+            raise Exception("An attempt was made to deal with a non existent socket")
  
     def http_processing(self, request: bytes):
         print(f"Received request:\n-----\n{request}\n-----")
@@ -119,7 +121,6 @@ class SimpleApi:
 
         if endpoint in self.methods[method]:
             ans = self.methods[method][endpoint]()
-            print (f"----------------{ans}")
             return ans
         else:
             return "HTTP/1.0 404 Not Found\r\n\r\nNot Found"
@@ -132,3 +133,6 @@ if __name__ == "__main__":
     server.configure_endpoints('GET', '/teste', funcao_teste)
     server.configure_endpoints('GET', '/outroteste', funcao_teste)
     server.begin_workers()
+
+    while not shutdown_requested:
+        time.sleep(1)
