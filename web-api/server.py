@@ -21,6 +21,15 @@ class SimpleApi:
     port : int
     load_size : int
 
+    POST_req = {}
+    GET_req = {}
+
+    methods = {
+        'GET': GET_req,
+        'POST': POST_req
+    }
+
+
     def __init__(self, host_addr:str='0.0.0.0', port:int = 8000, load_size:int = 2048, max_connections = 5):
 
         self.max_connections = max_connections
@@ -44,6 +53,12 @@ class SimpleApi:
             print(f"Error detected on sock.bind -> {e}")
             raise Exception(e)
 
+    def configure_endpoints(self, method, endpoint, function):
+        try:
+            self.methods[method][endpoint] = function
+        except:
+            raise Exception(f"The method '{method}' provided is not allowed")
+        
     def begin_workers(self):
         i=0
         active_thread = []
@@ -76,9 +91,9 @@ class SimpleApi:
             data = client.recv(self.load_size)
 
             if data:
-                self.http_processing(data)
+                ans = self.http_processing(data)
                 response = "HTTP/1.0 404 Not Found\r\n\r\nNot Found "
-                client.send(response.encode("utf-8"))
+                client.send(ans.encode("utf-8"))
             else:
                 print(f"Something went wrong with the client {client}")
 
@@ -89,6 +104,7 @@ class SimpleApi:
             print(f"Error timed out: {socket.timeout}")
         except OSError:
             print(f"OSError: {OSError}")
+            raise Exception(OSError)
         print("Exiting 'handle_connection()'")
  
     def http_processing(self, request: bytes):
@@ -96,11 +112,23 @@ class SimpleApi:
 
         pattern = f"\r\n\r\n"
         end_of_header = request.find(pattern.encode('utf-8'))
-        payload = request[end_of_header+4:]
-        method = request.split(b" ")[0]
-        endpoint = request.split(b" ")[1]
-        print(f"{method} {endpoint} {payload}")
+        payload = request[end_of_header+4:].decode('utf-8')
+        method = request.split(b" ")[0].decode('utf-8')
+        endpoint = request.split(b" ")[1].decode('utf-8')
+        print(f"Processed: {method} {endpoint} {payload}")
+
+        if endpoint in self.methods[method]:
+            ans = self.methods[method][endpoint]()
+            print (f"----------------{ans}")
+            return ans
+        else:
+            return "HTTP/1.0 404 Not Found\r\n\r\nNot Found"
+
+def funcao_teste():
+    return f"HTTP/1.0 200 Success\r\n\r\nNosso teste funciona ..."
 
 if __name__ == "__main__":
     server = SimpleApi()
+    server.configure_endpoints('GET', '/teste', funcao_teste)
+    server.configure_endpoints('GET', '/outroteste', funcao_teste)
     server.begin_workers()
