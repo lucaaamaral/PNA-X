@@ -23,12 +23,15 @@ class SimpleApi:
     POST_req = {}
     GET_req = {}
 
-    methods = {
+    method_map = {
         'GET': GET_req,
         'POST': POST_req
     }
 
-    def __init__(self, host_addr:str='0.0.0.0', port:int = 8000, load_size:int = 2048, max_connections = 5):
+    def __init__(self, host_addr:str='0.0.0.0', 
+                       port:int = 8000, 
+                       load_size:int = 2048, 
+                       max_connections:int = 2):
 
         self.max_connections = max_connections
         self.host_addr = host_addr
@@ -37,6 +40,7 @@ class SimpleApi:
         self.setup_server()
 
     def setup_server(self):
+
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.settimeout(1.0)
@@ -51,11 +55,11 @@ class SimpleApi:
             print(f"Error detected on sock.bind -> {e}")
             raise Exception(e)
 
-    def configure_endpoints(self, method, endpoint, function):
-        try:
-            self.methods[method][endpoint] = function
-        except:
-            raise Exception(f"The method '{method}' provided is not allowed")
+    def configure_endpoints(self, method:str, endpoint:str, function):
+        if method in self.method_map.keys():
+            self.method_map[method][endpoint] = function
+        else:
+            raise Exception(f"The method '{method}' provided is not yet implemented")
     
     def begin_workers(self):
         
@@ -110,28 +114,33 @@ class SimpleApi:
             raise Exception("An attempt was made to deal with a non existent socket")
  
     def http_processing(self, request: bytes):
-        print(f"Received request:\n-----\n{request}\n-----")
+
+        print(f"[DEBUG]: Received request:\n-----\n{request}\n-----")
 
         pattern = f"\r\n\r\n"
         end_of_header = request.find(pattern.encode('utf-8'))
+
         payload = request[end_of_header+4:].decode('utf-8')
         method = request.split(b" ")[0].decode('utf-8')
         endpoint = request.split(b" ")[1].decode('utf-8')
         print(f"Processed: {method} {endpoint} {payload}")
 
-        if endpoint in self.methods[method]:
-            ans = self.methods[method][endpoint]()
+        if endpoint in self.method_map[method]:
+            ans = self.method_map[method][endpoint](payload)
             return ans
         else:
             return "HTTP/1.0 404 Not Found\r\n\r\nNot Found"
 
-def funcao_teste():
-    return f"HTTP/1.0 200 Success\r\n\r\nNosso teste funciona ..."
+def funcao_teste(payload:str):
+    print(f'Recebido payload: {payload}')
+    with open('web-pages/index.html', 'r') as file:
+        return f"HTTP/1.0 200 Success\r\n\r\n{ file.read() }"
 
 if __name__ == "__main__":
     server = SimpleApi()
     server.configure_endpoints('GET', '/teste', funcao_teste)
     server.configure_endpoints('GET', '/outroteste', funcao_teste)
+    server.configure_endpoints('POST', '/consume_api', funcao_teste)
     server.begin_workers()
 
     while not shutdown_requested:
