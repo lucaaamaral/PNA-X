@@ -100,7 +100,7 @@ class SimpleApi:
 
             if data:
                 ans = self.http_processing(data)
-                response = "HTTP/1.0 404 Not Found\r\n\r\nNot Found "
+                response = "HTTP/1.1 404 Not Found\r\n\r\nNot Found "
                 client.send(ans.encode("utf-8"))
             else:
                 print(f"Something went wrong with the client {client}")
@@ -129,12 +129,12 @@ class SimpleApi:
             ans = self.method_map[method][endpoint](payload)
             return ans
         else:
-            return "HTTP/1.0 404 Not Found\r\n\r\nNot Found"
+            return "HTTP/1.1 404 Not Found\r\n\r\nNot Found"
 
 def funcao_teste(payload:str):
     print(f'Recebido payload: {payload}')
-    with open('web-pages/index.html', 'r') as file:
-        return f"HTTP/1.0 200 Success\r\n\r\n{ file.read() }"
+    with open('web-pages/index.html', 'r', encoding='utf-8') as file:
+        return f"HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n\r\n{ file.read() }"
 
 if __name__ == "__main__":
     server = SimpleApi()
