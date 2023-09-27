@@ -136,11 +136,22 @@ def funcao_teste(payload:str):
     with open('web-pages/index.html', 'r', encoding='utf-8') as file:
         return f"HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n\r\n{ file.read() }"
 
+def conector(payload:str):
+    conectores = "opt1,opt2,opt3".split(",")
+    ans = ""
+    for con in conectores:
+        ans = ans + f',{{"name":"{con}"}}'
+        
+    ans = ans[1:]
+    print (ans)
+    return f"HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n\r\n[{ans}]".replace(" ", "")
+
 if __name__ == "__main__":
     server = SimpleApi()
     server.configure_endpoints('GET', '/teste', funcao_teste)
     server.configure_endpoints('GET', '/outroteste', funcao_teste)
     server.configure_endpoints('POST', '/consume_api', funcao_teste)
+    server.configure_endpoints('GET', '/conector', conector)
     server.begin_workers()
 
     while not shutdown_requested:
