@@ -6,6 +6,22 @@ from SharedLib import PNA
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s:%(funcName)s:%(lineno)d - %(levelname)s - %(message)s")
 logging.root.name="SParamCal.py"
 
+class Sparam:
+
+    
+    def __init__()-> None:
+        pass
+
+    def conectorAvailable(self):
+        pass
+
+    def configure(self, session: visa.resources.Resource, 
+                 num: int, name: str, meas: str, 
+                 freq_start: float = 2000000000.0, 
+                 freq_stop:float = 3000000000.0,
+                 sweep_points = 201, amplitude_dB:float=-20.0):
+        pass
+
 def parameter_config(session: visa.resources.Resource, 
                      num: int, name: str, meas: str, 
                      freq_start: float = 2000000000.0, 

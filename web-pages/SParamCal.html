@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Página inicial</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: inherit;
+            min-height: 80vh;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            margin: 20px;
+        }
+        
+        h1 {
+            margin: 0;
+        }
+
+        h2 {
+            margin: 0;
+            margin-bottom: 30px;
+        }
+
+        .form-div {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            flex-direction: column;
+        }
+
+        .side-div {
+            width: inherit;
+            /* border: 1px solid #ccc; */
+            border-radius: 3px;
+
+            display: flex;
+            justify-content: space-around;
+            flex-direction:row;
+        }
+
+        .input-div {
+            width: 100%;
+            /* border: 1px solid #ccc; */
+            border-radius: 3px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        form {
+            display: block;
+            justify-content: space-between;
+            background-color: #f2f2f2;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 90%;
+        }
+        
+        label {
+            width: fit-content;
+        }
+
+        input {
+            width: inherit;
+            height: fit-content;
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }        
+        
+        select {
+            min-width: max-content;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 800px) {
+
+            .side-div{
+                display: block;
+            }
+
+            form{
+                max-width: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>PNA-X SParams</h1> 
+    <h2>measure and calibration</h2>
+
+    <form method="POST" action="/consume_api">
+        <div class="form-div">
+            <div class="input-div">
+                <label for="visa">Select a visa device to connect:</label>
+                <select id="visa" name="visa" required>
+                    <option value="" disabled selected>Loading visa...</option>
+                </select>
+            </div>
+
+            <div class="side-div">
+                <div class="input-div">
+                    <label for="init_freq">Start frequency:</label>
+                    <div class="input-div" style="flex-direction: row; padding: 0;">
+                        <input type="number" step="0.01" id="init_freq" name="init_freq" required>
+                        <select id="init_freq_unit" name="init_freq_unit" required style="width: max-content;">
+                            <option value="" disabled selected>Select unit</option>
+                            <option value="GHz">Ghz</option>
+                            <option value="MHz">MHz</option>
+                            <option value="GHz">GHz</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-div">
+                    <label for="end_freq">End frequency:</label>
+                    <div class="input-div" style="flex-direction: row; padding: 0;">
+                        <input type="number" step="0.01" id="end_freq" name="end_freq" required>
+                        <select id="init_freq_unit" name="init_freq_unit" required style="width: max-content;">
+                            <option value="" disabled selected>Select unit</option>
+                            <option value="GHz">Ghz</option>
+                            <option value="MHz">MHz</option>
+                            <option value="GHz">GHz</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="side-div">
+                <div class="input-div">
+                    <label for="sweep_pt">Sweep Points:</label>
+                    <input type="number" step="1" id="sweep_pt" name="sweep_pt" required>
+                </div>
+                    <div class="input-div">
+                        <label for="power">Power (dB):</label>
+                        <input type="number" step="1" id="power" name="power" required>
+                    </select>
+                </div>
+            </div>
+           
+            <div class="side-div">
+                <div class="input-div">                
+                    <label for="average">Average</label>
+                    <input type="number" step="1" id="average" name="average" required>
+                </div>
+                <div class="input-div">
+                    <label for="ports_number">How many ports will be used?</label>
+                    <input type="number" step="1" id="ports_number" name="ports_number" disabled required onchange="showConOpt(this)">
+                </div>
+            </div>
+
+            <div class="side-div" id="port1" style>
+                <div class="input-div">
+                        <label for="conn_1">Connector port 1:</label>
+                        <select id="conn_1" name="conn_1">
+                            <option value="" disabled selected>Select conector</option>
+                        </select>
+                </div>
+                <div class="input-div">
+                    <label for="ckit_1">Calkit port 1:</label>
+                    <select id="ckit_1" name="ckit_1">
+                        <option value="" disabled selected>Select calkit</option>
+                    </select>
+                </div>
+            </div>
+
+            
+            <div class="side-div" id="port2">
+                <div class="input-div">
+                        <label for="conn_2">Connector port 2:</label>
+                        <select id="conn_2" name="conn_2">
+                            <option value="" disabled selected>Select conector</option>
+                        </select>
+                </div>
+                <div class="input-div">
+                    <label for="ckit_2">Calkit port 2:</label>
+                    <select id="ckit_2" name="ckit_2">
+                        <option value="" disabled selected>Select calkit</option>
+                    </select>
+                </div>
+            </div>
+
+            
+            <div class="side-div" id="port3">
+                <div class="input-div">
+                        <label for="conn_3">Connector port 3:</label>
+                        <select id="conn_3" name="conn_3">
+                            <option value="" disabled selected>Select conector</option>
+                        </select>
+                </div>
+                <div class="input-div">
+                    <label for="ckit_3">Select calkit for port 3:</label>
+                    <select id="ckit_3" name="ckit_3">
+                        <option value="" disabled selected>Select calkit</option>
+                    </select>
+                </div>
+            </div>
+
+            
+            <div class="side-div" id="port4">
+                <div class="input-div">
+                        <label for="conn_4">Select connector for port 4:</label>
+                        <select id="conn_4" name="conn_4">
+                            <option value="" disabled selected>Select conector</option>
+                        </select>
+                </div>
+                <div class="input-div">
+                    <label for="ckit_4">Select calkit for port 4:</label>
+                    <select id="ckit_4" name="ckit_4">
+                        <option value="" disabled selected>Select calkit</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-div" style="flex-direction: row;">
+                <label for="calibrate">Perform calibration?</label>
+                <input type="checkbox" id="calibrate" name="calibrate" style="width: fit-content;">
+            </div>
+
+            <div class="input-div" style="flex-direction: row;">
+                <label for="save">Save CalSet?</label>
+                <input type="checkbox" id="save" name="save" style="width: fit-content;">
+            </div>
+        </div><br>
+        <button type="submit">Submit</button>
+    </form>
+
+    
+</body>
+</html>
+
+<script>
+    portVisibility()
+    getVisa()
+    function portVisibility(){
+
+        console.log('Hiding port boxes')
+        for(let i=1; i<=4; i++){
+            document.getElementById('port'+i).style.display = "none"
+        }
+    }
+
+    function getVisa(){
+
+        selectVisa = document.getElementById("visa")
+        const myurl = new URL(window.location.href);
+        const baseUrl = `${myurl.protocol}//${myurl.host}` + '/visaAvailable';
+        console.log('Checking available VISA devices -> ' + `${baseUrl}`);
+        fetch(baseUrl)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Visa devices found: ', data)
+                data.forEach(element => {
+                    const option = document.createElement('option');
+                    console.log("Element", element);
+                    option.value = element.name;
+                    option.text = element.name;
+                    selectVisa.appendChild(option);
+                })
+                if ((selectVisa.options.length == 2 && selectVisa.options[1].text == 'Error loading visa devices')){
+                    selectVisa.remove(0);
+                    selectVisa.options[0].disabled = true;
+                }
+                else {
+                    selectVisa.options[0].text = 'Select a visa device'
+                }
+            });
+    }
+
+    function setConnectorOpt(ConectorElement, index){
+
+        const myurl = new URL(window.location.href);
+        const baseUrl = `${myurl.protocol}//${myurl.host}` + '/conector';
+        console.log('Asking for connector options at ' + `${baseUrl}`);
+        
+        fetch( baseUrl , {
+            method: 'POST',
+            body: 'some:'+`${index}`
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.debug('Data collected: ', data);
+                data.forEach(element => {
+                    const option = document.createElement('option');
+                    option.value = element.name;
+                    option.text = element.name;
+                    ConectorElement.appendChild(option);
+                });
+            })
+            .catch(error => {
+                const options = ConectorElement.options;
+                options[0].text = 'an error occurred when trying to fetch information'
+                console.error('Data fetch error ', error);
+            })
+    }
+
+
+    function showConOpt(inputElement){
+
+        if (inputElement.value>4) inputElement.value = 4;
+        if (inputElement.value<0) inputElement.value = 0;
+
+        const number = inputElement.value
+        const previousValue = inputElement.dataset.previousValue || 0;
+
+        console.debug('number ' + number + ' previousValue ' + previousValue);
+
+        for(let i=1; i<=number; i++){
+            document.getElementById('port'+i).style.display = ""
+            const conector = document.getElementById('conn_'+i)
+            conector.setAttribute('required', '')
+            if (conector.options.length == 1) setConnectorOpt(conector, i)
+            const calkit = document.getElementById('ckit_'+i)
+            calkit.setAttribute('required', '')
+            if (calkit.options.length == 1) setConnectorOpt(calkit, i)
+
+        }
+        
+        for(let i=4; i>number; i--){
+            document.getElementById('port'+i).style.display = "none"
+            const conector = document.getElementById('conn_'+i)
+            conector.removeAttribute('required')
+            conector.value = ""
+            const calkit = document.getElementById('ckit_'+i)
+            calkit.removeAttribute('required')
+            calkit.value = ""
+        }
+        inputElement.dataset.previousValue = number
+    }
+</script>
