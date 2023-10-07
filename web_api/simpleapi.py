@@ -29,9 +29,13 @@ class SimpleApi:
     }
 
     http_header = {
-        '404': b'HTTP/1.1 404 Not Found\r\n\r\nNot Found',
-        'text': b'HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n\r\n',
-        'image': b'HTTP/1.1 200 OK\r\nServer: SimpleApi\r\nContent-Type: image\r\n\r\n'
+        '200': b'HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n',
+        '404': b'HTTP/1.1 404 Not Found\r\n\r\nNot Found'
+        }
+    http_resource = {
+        'html': http_header['200'] + b'Content-Type: text/html\r\n\r\n',
+        'png': http_header['200'] + b'Content-Type: image/png\r\n\r\n',
+        'json': http_header['200'] + b'Content-Type: application/json\r\n\r\n',
     }
 
     def __init__(self, host_addr:str='0.0.0.0', 
@@ -65,12 +69,14 @@ class SimpleApi:
         if method in self.method_map.keys():
             self.method_map[method][endpoint] = function
         else:
+            print(f"[WARNING] The method '{method}' provided is not yet implemented")
             raise Exception(f"The method '{method}' provided is not yet implemented")
     
     def begin_workers(self):
         
         self.thread = Thread(target=self.manage_workers)
         self.thread.start()
+
 
     def manage_workers(self):
         i=0
@@ -94,7 +100,10 @@ class SimpleApi:
 
                 time.sleep(0.00000000000000000000000001)
         
+        self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
+        print("Closed socket")
+
 
     def handle_connection(self):
         try: 
@@ -111,7 +120,8 @@ class SimpleApi:
         except socket.timeout:
             print(f"Error timed out: {socket.timeout}")
         except OSError:
-            raise Exception("An attempt was made to deal with a non existent socket")
+            print(f'[WARNING] An attempt was made to deal with a non existent socket')
+            # raise Exception("An attempt was made to deal with a non existent socket")
  
     def http_processing(self, client:socket.socket):
 
@@ -131,7 +141,8 @@ class SimpleApi:
             print(f"Processed: {method} {endpoint} {payload}")
 
             if not method in self.method_map:
-                raise Exception(f'Method {method} not supported')
+                print(f'[WARNING] Method {method} not supported')
+                # raise Exception(f'Method {method} not supported')
             
             if endpoint in self.method_map[method]:
                 ans:bin = self.method_map[method][endpoint](payload)
@@ -144,40 +155,23 @@ class SimpleApi:
         else:
             print(f"Something went wrong with the client {client}")
 
-
-def funcao_teste(payload:str):
-    print(f'Recebido payload: {payload}')
-    with open('web-pages/index.html', 'r', encoding='utf-8') as file:
-        return SimpleApi.http_header['text'] + file.read().encode('utf-8')
-    
-
-def conector(payload:str):
-    conectores = "opt1,opt2,opt3".split(",")
-    ans = ""
-    for con in conectores:
-        ans = ans + f',{{"name":"{con}"}}'
-    ans = ans[1:]
-    print (ans)
-    return SimpleApi.http_header['text'] + f"[{ans}]".encode('utf-8')
-
 def novapagina (payload:str):
     print(f'Recebido payload: {payload}')
     with open('web-pages/result.html', 'r', encoding='utf-8') as file:
-        return SimpleApi.http_header['text'] + file.read().encode('utf-8')
+        return SimpleApi.http_resource['html'] + file.read().encode('utf-8')
 
-def imagem (payload:str):
+def ultimaimagem (payload:str):
     print(f'Recebido payload: {payload}')
-    with open('web-pages/2023-09-08-11-22-measurement.png', 'rb') as file:
-        return SimpleApi.http_header['image'] + file.read() 
+    with open('web-pages/imagem.webp', 'rb') as file:
+        return SimpleApi.http_resource['png'] + file.read()
 
 if __name__ == "__main__":
     server = SimpleApi()
-    server.configure_endpoints('GET', '/teste', funcao_teste)
     server.configure_endpoints('GET', '/outroteste', novapagina)
-    server.configure_endpoints('POST', '/consume_api', funcao_teste)
     server.configure_endpoints('GET', '/conector', conector)
-    server.configure_endpoints('GET', '/resource', imagem)
+    server.configure_endpoints('GET', '/resource', ultimaimagem)
     server.begin_workers()
+
 
     while not shutdown_requested:
         time.sleep(1)

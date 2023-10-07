@@ -4,6 +4,14 @@ import logging
 
 logger = logging.getLogger("PNA.py")
 
+class PNA:
+
+    def __init__(self):
+        pass
+    
+    def visaAvailable() -> list:
+        return visa.ResourceManager().list_resources()
+
 def initiate_comms(VISA_ADDRESS: str='TCPIP0::A-N5241A-11745.local::hislip0::INSTR') -> visa.resources.Resource:
     logger.info("Initiating connection to the instrument.")
     print("Initiating connection to the instrument.")

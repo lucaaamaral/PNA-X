@@ -116,9 +116,9 @@
     <form method="POST" action="/consume_api">
         <div class="form-div">
 
-            <div class="input-div" id="visa">
+            <div class="input-div">
                 <label for="visa">Select a visa device to connect:</label>
-                <select id="visa" name="visa">
+                <select id="visa" name="visa" required>
                     <option value="" disabled selected>Loading visa...</option>
                 </select>
             </div>
@@ -163,12 +163,13 @@
             </div>
            
             <div class="side-div">
+                <div class="input-div">                
+                    <label for="average">Average</label>
+                    <input type="number" step="1" id="average" name="average" required>
+                </div>
                 <div class="input-div">
                     <label for="ports_number">How many ports will be used?</label>
                     <input type="number" step="1" id="ports_number" name="ports_number" required onchange="showConOpt(this)">
-                </div>
-                    <div class="input-div">
-                    </select>
                 </div>
             </div>
 
@@ -256,7 +257,7 @@
 
 <script>
     portVisibility()
-
+    getVisa()
     function portVisibility(){
 
         console.log('Hiding port boxes')
@@ -265,13 +266,43 @@
         }
     }
 
-    function setConnectorOpt(ConectorElement){
+    function getVisa(){
+
+        selectVisa = document.getElementById("visa")
+        const myurl = new URL(window.location.href);
+        const baseUrl = `${myurl.protocol}//${myurl.host}` + '/visaAvailable';
+        console.log('Checking available VISA devices -> ' + `${baseUrl}`);
+        fetch(baseUrl)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Visa devices found: ', data)
+                data.forEach(element => {
+                    const option = document.createElement('option');
+                    console.log("Element", element);
+                    option.value = element.name;
+                    option.text = element.name;
+                    selectVisa.appendChild(option);
+                })
+                if ((selectVisa.options.length == 2 && selectVisa.options[1].text == 'Error loading visa devices')){
+                    selectVisa.remove(0);
+                    selectVisa.options[0].disabled = true;
+                }
+                else {
+                    selectVisa.options[0].text = 'Select a visa device'
+                }
+            });
+    }
+
+    function setConnectorOpt(ConectorElement, index){
 
         const myurl = new URL(window.location.href);
         const baseUrl = `${myurl.protocol}//${myurl.host}` + '/conector';
         console.log('Asking for connector options at ' + `${baseUrl}`);
         
-        fetch( baseUrl )
+        fetch( baseUrl , {
+            method: 'POST',
+            body: 'some:'+`${index}`
+        })
             .then(response => response.json())
             .then(data => {
                 console.debug('Data collected: ', data);
