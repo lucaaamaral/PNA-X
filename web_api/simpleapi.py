@@ -1,18 +1,10 @@
 import socket
-import signal
 import time
 from threading import Thread
 
-shutdown_requested = False
-
-def signal_handler(signum, frame):
-    print(f"Requested exit")
-    global shutdown_requested
-    shutdown_requested = True
-
-signal.signal(signal.SIGINT, signal_handler)
-
 class SimpleApi:
+
+    shutdown_requested: bool = False
 
     max_connections : int
     sock : socket.socket
@@ -30,10 +22,12 @@ class SimpleApi:
 
     http_header = {
         '200': b'HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n',
-        '404': b'HTTP/1.1 404 Not Found\r\n\r\nNot Found'
+        '404': b'HTTP/1.1 404 Not Found\r\n\r\nNot Found',
+        '400': b'HTTP/1.1 404 Bad Request\r\n\r\nBadRequest'
         }
     http_resource = {
         'html': http_header['200'] + b'Content-Type: text/html\r\n\r\n',
+        'css': http_header['200'] + b'Content-Type: text/css\r\n\r\n',
         'png': http_header['200'] + b'Content-Type: image/png\r\n\r\n',
         'json': http_header['200'] + b'Content-Type: application/json\r\n\r\n',
     }
@@ -82,7 +76,7 @@ class SimpleApi:
         i=0
         active_thread = []
 
-        while not shutdown_requested:
+        while not SimpleApi.shutdown_requested:
 
             while (i<self.max_connections):
                 current_thread = Thread(target=self.handle_connection)
@@ -100,7 +94,7 @@ class SimpleApi:
 
                 time.sleep(0.00000000000000000000000001)
         
-        self.sock.shutdown(socket.SHUT_RDWR)
+        # self.sock.shutdown(socket.SHUT_RDWR)
         self.sock.close()
         print("Closed socket")
 
@@ -154,24 +148,3 @@ class SimpleApi:
             
         else:
             print(f"Something went wrong with the client {client}")
-
-def novapagina (payload:str):
-    print(f'Recebido payload: {payload}')
-    with open('web-pages/result.html', 'r', encoding='utf-8') as file:
-        return SimpleApi.http_resource['html'] + file.read().encode('utf-8')
-
-def ultimaimagem (payload:str):
-    print(f'Recebido payload: {payload}')
-    with open('web-pages/imagem.webp', 'rb') as file:
-        return SimpleApi.http_resource['png'] + file.read()
-
-if __name__ == "__main__":
-    server = SimpleApi()
-    server.configure_endpoints('GET', '/outroteste', novapagina)
-    server.configure_endpoints('GET', '/conector', conector)
-    server.configure_endpoints('GET', '/resource', ultimaimagem)
-    server.begin_workers()
-
-
-    while not shutdown_requested:
-        time.sleep(1)
