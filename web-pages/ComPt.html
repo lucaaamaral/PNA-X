@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Página inicial</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>PNA-X SParams</h1> 
+    <h2>measure and calibration</h2>
+
+    <form method="POST" onsubmit="event.preventDefault(); sendForm();">
+        <div class="form-div">
+            <div class="input-div">
+                <label for="visa">Select a visa device to connect:</label>
+                <select id="visa" name="visa" required onchange="ConnectTo(this.value)">
+                    <option value="someVisa" disabled selected>Loading visa...</option> <!-- TODO: remove value from here -->
+                </select>
+            </div>
+
+            <div class="side-div">
+                <div class="input-div">
+                    <label for="freq">Frequency:</label>
+                    <div class="input-div" style="flex-direction: row; padding: 0;">
+                        <input type="number" step="0.01" min="0" id="freq" name="freq" required>
+                        <select id="freq_unit" name="freq_unit" required style="width: max-content;">
+                            <option value="" disabled selected>Select unit</option>
+                            <option value="GHz">Ghz</option>
+                            <option value="MHz">MHz</option>
+                            <option value="kHz">kHz</option>
+                            <option value="Hz">Hz</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-div">
+                    <label for="average">Average</label>
+                    <input type="number" step="1" min="0" id="average" name="average" required>
+                </div>
+            </div>
+
+            <div class="side-div">
+                <div class="input-div">
+                    <label for="start_pow">Start power (dB)</label>
+                    <input type="number" step="1" min="0" id="start_pow" name="start_pow" required>
+                </div>
+                    <div class="input-div">
+                        <label for="stop_pow">Stop power (dB):</label>
+                        <input type="number" step="1" min="0" id="stop_pow" name="stop_pow" required>
+                    </select>
+                </div>
+            </div>
+           
+            <div class="side-div">
+                <div class="input-div">
+                    <label for="offset">Offset (dB):</label>
+                    <div class="input-div" style="flex-direction: row; padding: 0;">
+                        <input type="number" step="0.01" id="offset" name="offset" required>
+                    </div>
+                </div>
+                <div class="input-div">                
+                </div>
+            </div><br><br><br>
+        <button type="submit" id="submit">Submit</button>
+    </div><br>
+    </form>
+
+    <button id="openDialog" style="display: none;">Open Image</button>
+
+    <div id="Modal" class="modal">
+        <div class="form-div">
+                <span class="close" id="closeModal">&times;</span>
+                <img id="modalImage" src="" alt="Image">
+        </div>
+    </div>
+
+</body>
+</html>
+
+<script>
+    getVisa()
+    modal()
+
+    function modal() {
+        var modal = document.getElementById('Modal');
+        var modalImage = document.getElementById('modalImage');
+        var closeButton = document.getElementById('closeModal');
+        var openButton = document.getElementById('openDialog');
+
+        openButton.onclick = function() {
+            modal.style.display = 'flex';
+            modalImage.src='/last_img'
+        }
+
+        closeButton.onclick = function() {
+            modal.style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
+    }
+
+
+
+    function getVisa(){
+        selectVisa = document.getElementById("visa")
+        const myurl = new URL(window.location.href);
+        const baseUrl = `${myurl.protocol}//${myurl.host}` + '/visaAvailable';
+        console.log('Checking available VISA devices -> ' + `${baseUrl}`);
+
+        fetch(baseUrl)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Visa devices found: ', data)
+                data.forEach(element => {
+                    const option = document.createElement('option');
+                    console.log("Element", element);
+                    option.value = element.name;
+                    option.text = element.name;
+                    selectVisa.appendChild(option);
+                })
+                if ((selectVisa.options.length == 2 && selectVisa.options[1].text == 'Error loading visa devices')){
+                    selectVisa.remove(0);
+                    selectVisa.options[0].disabled = true;
+                }
+                else {
+                    selectVisa.options[0].text = 'Select a visa device'
+                }
+            });
+    }
+
+    function ConnectTo(visaDevName){
+
+        const myurl = new URL(window.location.href);
+        const baseUrl = `${myurl.protocol}//${myurl.host}` + '/connectTo';
+        console.log('ConnectTo visa at ' + `${baseUrl}`);
+
+        fetch( baseUrl , {
+            method: 'POST',
+            body: `${visaDevName}`
+        })
+        .catch(error => {
+            console.error('ConnectTo error:', error);
+        })
+        console.log('Completed ConnectTo')
+    }
+
+    function sendForm() {
+        
+        const myurl = new URL(window.location.href);
+        const baseUrl = `${myurl.protocol}//${myurl.host}` + '/start_compt';
+        console.log('Asking for connection start options at ' + `${baseUrl}`);
+
+        const formData = {
+            // visa:           document.getElementById("visa").value,
+            freq:       document.getElementById("freq").value,
+            freq_unit:  document.getElementById("freq_unit").value,
+            average:    document.getElementById("average").value,
+            start_pow:  document.getElementById("start_pow").value,
+            stop_pow:   document.getElementById("stop_pow").value,
+            offset:     document.getElementById("offset").value
+        };
+
+        const jsonData = JSON.stringify(formData);
+        console.log(jsonData)
+        fetch(baseUrl, {
+            method: "POST",
+            Headers: { "Content-Type": "application/json" },
+            body: jsonData
+        })
+        .catch(error => {
+            console.error("Error: ", error);
+        });
+        var modal = document.getElementById('Modal');
+        var modalImage = document.getElementById('modalImage');
+        modal.style.display = 'flex';
+        modalImage.src='/last_img'
+    };
+</script>
