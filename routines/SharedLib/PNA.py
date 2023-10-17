@@ -76,6 +76,7 @@ class PNA:
         elif (status & bitmap["error"]):
             PNA.error = PNA.session.query("SYSTem:ERRor?")
             logger.error(f"Mapped error {PNA.error}")
+            raise Exception(PNA.error)
         elif (status & bitmap["questionable summary"]):
             logger.warn("resource_status: questionable summary")
             pass #TODO: implement the rest of those messsages if necessary
@@ -96,7 +97,6 @@ class PNA:
             pass #TODO: implement the rest of those messsages if necessary
 
     class SParam:
-
         freq_start: float 
         freq_stop: float
         sweep_points: int 
@@ -137,9 +137,11 @@ class PNA:
 
             steps = int(PNA.session.query("SENSe1:CORRection:COLLect:GUIDed:STEPs?"))
 
+            # TODO: interact with oppened PNA.session
+            # BIIIIIIIG TODO
             for i in range(1, steps+1):
                 print(PNA.session.query(f"SENSe1:CORRection:COLLect:GUIDed:DESCription? {i}"))
-                _ = input("Press enter when done") # TODO: interact with oppened session
+                _ = input("Press enter when done") # TODO: interact with oppened PNA.session
                 PNA.session.write(f"SENSe1:CORRection:COLLect:GUIDed:ACQuire STAN{i}")
             
             PNA.session.write("SENSe1:CORRection:COLLect:GUIDed:SAVE")
@@ -154,79 +156,104 @@ class PNA:
             PNA.session.write(f"SENSe1:CORRection:CSET:COPY '{my_cal_set}'")
             PNA.resource_status(PNA.session)
 
+    class ComPt:
 
-def initiate_comms(VISA_ADDRESS: str='TCPIP0::A-N5241A-11745.local::hislip0::INSTR') -> visa.resources.Resource:
-    logger.info("Initiating connection to the instrument.")
-    print("Initiating connection to the instrument.")
-    if ( VISA_ADDRESS == None):
-        print("Resources available:")
-        for resource in visa.ResourceManager().list_resources():
-            print(f"\t{resource}")
-        VISA_ADDRESS=input(f"Copy and paste one of the above available devices:\n\t-> ")
-    try:
-        session = visa.ResourceManager().open_resource(VISA_ADDRESS)
-        session.timeout = 12000
-        session.write_termination = ''
-        print(f'\nConnected equipment identification: {identity(session)}\n')
-        # session.write("*RST")
-        session.write("*CLS")
-        session.write("CALCulate:PARameter:DELete:ALL")
-        resource_status(session)
-        return session
-    except visa.errors.VisaIOError as e:
-        print(f"Selected address not found, ERROR: {e}")
-        sys.exit()
+        frequency: int
+        start_power: int
+        stop_power: int
+        average: int
+        offset: float
+        last_image: str
+        last_datafile: str
 
-def identity(session: visa.resources.Resource) -> str:
-    return session.query("*IDN?")
+        def sweep_power() -> None:
+            # Requires three variables to be set:
+            # # frequency
+            # # start_power
+            # # stop_power
+            PNA.session.write("SENSe1:SWEep:TYPE POWer")
+            PNA.session.write(f"SOURce1:POWer:START {PNA.ComPt.start_power}")
+            PNA.session.write(f"SOURce1:POWer:STOP {PNA.ComPt.stop_power}")
+            PNA.session.write(f"SENSe1:FREQuency:FIXed {PNA.ComPt.frequency}")
+            PNA.resource_status()
 
-def resource_status(session: visa.resources.Resource):
-    #TODO: implement rest of messages logic annd threat it properly
-    bitmap = {
-        "all clear": 0,
-        "error": 1<<2,
-        "questionable summary": 1<<3,
-        "message available": 1<<4,
-        "standard event": 1<<5,
-        "request service": 1<<6,
-        "operation register": 1<<7
-    }
-    status = int(session.query("*STB?"))
+        def parameter_config() -> None:
+            # Requires one variable to be set:
+            # # average
+            PNA.session.write("CALCulate1:PARameter:DEFine:EXTended 'ComPt', 'S21'")
+            PNA.session.write("DISPlay:WINDow1:TRACe1:FEED 'ComPt'")
+            PNA.session.write("CALCulate1:PARameter:SELect 'ComPt'")
+            PNA.resource_status()
+            PNA.session.write("CALCulate1:FORMat MLOGarithmic")
+            PNA.resource_status()
+            PNA.session.write("DISPlay:WINDow1:TRACe1:Y:SCALe:AUTO")
+            PNA.resource_status()
+            PNA.session.write(f"SENSe1:AVERage:COUNt {PNA.ComPt.average}")
+            PNA.session.write("SENSe1:AVERage:STATe 1")
+            PNA.resource_status()
+            PNA.session.write("CALCulate1:MARKer:REFerence:STATe 1")
+            PNA.resource_status()
+            PNA.session.write(f"CALCulate1:MARKer10:X MIN") # TODO: magic value
+            MarkerX10 = PNA.session.query("CALCulate1:MARKer10:X?") # pcap shows -20
+            MarkerY10 = PNA.session.query("CALCulate1:MARKer10:Y?") # pcap shows -1.589, 0
+            PNA.resource_status()
+            PNA.session.write("CALCulate1:MARKer:STATe 1")
+            PNA.resource_status()
+            PNA.session.write("CALCulate1:MARKer1:FUNCtion:SELect TARG")
+            PNA.session.write("CALCulate1:MARKer1:TARGet -2.589769") # TODO: magic number / MarkerY10 - 1 ?
+            PNA.session.write("CALCulate1:MARKer1:FUNCtion:TRACking 1")
+            print(f'Marker X?{PNA.session.query("CALCulate1:MARKer1:X?")}') # TODO: remove this print
+            print(f'Marker Y?{PNA.session.query("CALCulate1:MARKer1:Y?")}')
+            PNA.resource_status()
 
-    if (status == bitmap["all clear"]):
-        pass
-    elif (status & bitmap["error"]):
-        error = session.query("SYSTem:ERRor?")
-        print(f"An error hass been found: {error}")
-        print("Exiting the code")
-        sys.exit()
-    elif (status & bitmap["questionable summary"]):
-        print("resource_status: questionable summary")
-        pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
-        sys.exit()
-    elif (status & bitmap["message available"]):
-        print("resource_status: message available")
-        pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
-        sys.exit()
-    elif (status & bitmap["standard event"]):
-        print("resource_status: standard event")
-        pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
-        sys.exit()
-    elif (status & bitmap["request service"]):
-        print("resource_status: request service")
-        pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
-        sys.exit()
-    elif (status & bitmap["operation register"]):
-        print("resource_status: operation register")
-        pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
-        sys.exit()
-    else:
-        print(f"resource_status: wrong status message recceived: '{status}', please verify")
-        pass #TODO: implement the rest of those messsages if necessary
-        print("Exiting the code")
-        sys.exit()
+        def plot_data() -> None:
+            # Requires four variables to be set:
+            # # frequency
+            # # start_power
+            # # stop_power
+            # # offset
+            import matplotlib.pyplot as plt
+            from datetime import datetime
+            
+            # params = PNA.session.query("CALCulate1:PARameter:CATalog?") # TODO: query to verify if parameters are corectly set
+            # PNA.resource_status()
+            PNA.session.write("CALCulate1:PARameter:SELect 'ComPt'") 
+            PNA.session.write("FORMat:DATA ASCII,0")
+            data = PNA.session.query("CALCulate1:DATA? FDATA")
+            PNA.resource_status()
+
+            data = data.split(",")
+            delta = (PNA.ComPt.start_power - PNA.ComPt.stop_power) / len(data)
+            ComPt = []
+            power = []
+            for i in range(len(data)):
+                data[i] = float(data[i]) + PNA.ComPt.offset
+                ComPt.append(data[0]-1)
+                power.append(PNA.ComPt.start_power + delta*i)
+
+            # print(data)
+
+            plt.plot(power, data, label="measured gain")
+            plt.plot(power, ComPt, label="compression target")
+            plt.xlabel(f"Power (dBm)")
+            plt.ylabel("Gain")
+            plt.title("Compression point")
+            plt.legend()
+            # plt.show()
+
+            # TODO: return the processed data to the javascript to plot in a HTML canvas style
+
+            timestamp = datetime.fromtimestamp(time.time()).strftime("%Y-%m-%d-%H-%M")
+            filename = f"{timestamp}-measurement.txt"
+
+            plt.savefig(f"{timestamp}-measurement.png")
+            PNA.ComPt.last_image = f"{timestamp}-measurement.png"
+            PNA.ComPt.last_datafile = f"{timestamp}-measurement.txt"
+    
+            with open(filename, "w") as file:
+                file.write(f"VAR\tFREQ(real)=\t{PNA.ComPt.frequency:.2e}\n")
+                file.write(f"BEGIN\tmeasure-{timestamp}\n")
+                file.write(f"%\tCOLUMN1_m(real)\tCOLUMN2_m(real)\n")
+                for i in range(len(data)):
+                        file.write(f"\t{power[i]:.3e}\t{data[i]:.3e}\n")
+                file.write(f"END\n")
