@@ -19,11 +19,15 @@ class SimpleApi:
         'GET': GET_req,
         'POST': POST_req
     }
-
+    # TODO: HTTP resources as a class inside a class
     http_header = {
+        '100': b'HTTP/1.1 100 Continue\r\nServer: SimpleApi\r\n\r\n',
         '200': b'HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n',
-        '404': b'HTTP/1.1 404 Not Found\r\n\r\nNot Found',
-        '400': b'HTTP/1.1 404 Bad Request\r\n\r\nBadRequest'
+        '404': b'HTTP/1.1 404 Not Found\r\nServer: SimpleApi\r\n\r\n',
+        '405': b'HTTP/1.1 405 Method Not Allowed\r\nServer: SimpleApi\r\n\r\n',
+        '405': b'HTTP/1.1 417 Expectation Failed\r\nServer: SimpleApi\r\n\r\n',
+        '418': b"HTTP/1.1 418 I'm a teapot\r\nServer: SimpleApi\r\n\r\n",
+        '400': b'HTTP/1.1 400 Bad Request\r\nServer: SimpleApi\r\n\r\n'
         }
     http_resource = {
         'html': http_header['200'] + b'Content-Type: text/html\r\n\r\n',
