@@ -30,7 +30,8 @@
                             <option value="" disabled selected>Select unit</option>
                             <option value="GHz">Ghz</option>
                             <option value="MHz">MHz</option>
-                            <option value="Hz">GHz</option>
+                            <option value="kHz">kHz</option>
+                            <option value="Hz">Hz</option>
                         </select>
                     </div>
                 </div>
@@ -42,7 +43,8 @@
                             <option value="" disabled selected>Select unit</option>
                             <option value="GHz">Ghz</option>
                             <option value="MHz">MHz</option>
-                            <option value="Hz">GHz</option>
+                            <option value="kHz">kHz</option>
+                            <option value="Hz">Hz</option>
                         </select>
                     </div>
                 </div>
@@ -154,7 +156,7 @@
 <script>
     portVisibility()
     getVisa()
-
+    // TODO: extra window to interact with backend and make steps to calibration
     function portVisibility(){
         console.log('Hiding port boxes')
         for(let i=1; i<=4; i++){
