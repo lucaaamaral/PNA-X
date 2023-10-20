@@ -17,10 +17,18 @@ class PNA:
         return tmp
 
     def queryConnector() -> list:
-        return PNA.session.query("SENSe1:CORRection:COLLect:GUIDed:CONN:CAT?").replace('"', '').split(", ")
+        while PNA.busy: time.sleep(0.1)
+        PNA.busy = True
+        ans = PNA.session.query("SENSe1:CORRection:COLLect:GUIDed:CONN:CAT?").replace('"', '').replace('\n', '').split(", ")
+        PNA.busy = False
+        return ans
     
     def queryCalkit(selected_connector:str) -> list:
-        return PNA.session.query(f'SENS1:CORR:COLL:GUID:CKIT:CAT? "{selected_connector}"').replace('"', '').split(", ")
+        while PNA.busy: time.sleep(0.1)
+        PNA.busy = True
+        ans = PNA.session.query(f'SENS1:CORR:COLL:GUID:CKIT:CAT? "{selected_connector}"').replace('"', '').replace('\n', '').split(", ")
+        PNA.busy = False
+        return ans
     
     def notSoGracefulExit() -> None:
         if PNA.session:
@@ -30,7 +38,10 @@ class PNA:
 
     def visaAvailable() -> list:
         while PNA.busy: time.sleep(0.1)
-        return PNA.manager.list_resources()
+        PNA.busy = True
+        ans = PNA.manager.list_resources()
+        PNA.busy = False
+        return ans
     
     def initiate(VISA_ADDRESS: str) -> None:
         while PNA.busy: time.sleep(0.1)
@@ -58,7 +69,6 @@ class PNA:
     def resource_status():
 
         # TODO: implement rest of messages logic annd threat it properly
-        # TODO: raise exception?? -> might lead to no response sent
 
         bitmap = {
             "all clear": 0,
@@ -76,6 +86,7 @@ class PNA:
         elif (status & bitmap["error"]):
             PNA.error = PNA.session.query("SYSTem:ERRor?")
             logger.error(f"Mapped error {PNA.error}")
+            PNA.busy = False
             raise Exception(PNA.error)
         elif (status & bitmap["questionable summary"]):
             logger.warn("resource_status: questionable summary")
@@ -102,59 +113,107 @@ class PNA:
         sweep_points: int 
         amplitude_dB: float
         average: int
+        save: bool
+
+        current_step: int = 0
+        total_steps: int
 
         def configure(num: int, name: str, meas: str) -> None:
-            
+            # Requires five variables to be set:
+            # # freq_start
+            # # freq_stop
+            # # sweep_points
+            # # amplitude_dB
+            # # average
+
+            while PNA.busy: time.sleep(0.1)
+            PNA.busy = True
+
             PNA.session.write("SENSe1:SWEep:TYPE LINear")
             PNA.session.write(f"SENSe1:FREQuency:STARt {PNA.SParam.freq_start}")
             PNA.session.write(f"SENSe1:FREQuency:STOP {PNA.SParam.freq_stop}")
-            PNA.resource_status(PNA.session) 
+            PNA.resource_status() 
             PNA.session.write(f"SENSe1:SWEep:POINTs {PNA.SParam.sweep_points}")
-            PNA.resource_status(PNA.session) 
+            PNA.resource_status() 
 
             PNA.session.write(f"CALCulate1:PARameter:DEFine:EXTended '{name}','{meas}'")
             PNA.session.write(f"DISPlay:WINDow1:TRACe{num}:FEED '{name}'")
             PNA.session.write(f"CALCulate1:PARameter:SELect '{name}'")
-            PNA.resource_status(PNA.session) 
+            PNA.resource_status() 
             PNA.session.write(f"CALCulate1:PARameter:SELect '{name}'")
 
             PNA.session.write("CALCulate1:FORMat MLOGarithmic")
-            PNA.resource_status(PNA.session) 
+            PNA.resource_status() 
             PNA.session.write(f"SOURce1:POWer1:LEVel:IMMediate:AMPLitude {PNA.SParam.amplitude_dB}")
             PNA.session.write(f"SENSe1:BANDwidth:RESolution 10000.000000") # TODO: magic value
             PNA.session.write(f"SENSe1:AVERage:COUNt {PNA.SParam.average}") # TODO: Test if this works
             PNA.session.write("SENSe1:AVERage:STATe 1")
-            PNA.resource_status(PNA.session) 
+            PNA.resource_status() 
+
+            PNA.busy = False
 
         def guided_calibration(connectors: list, calkits: list) -> None:
             # TODO: needs wotk with interacting with webpage
+
+            while PNA.busy: time.sleep(0.1)
+            PNA.busy = True
+            logger.debug(f"Conectores: {connectors}, Kits: {calkits}")
             for i in [1, 2, 3, 4]:
                 PNA.session.write(f'SENSe1:CORRection:COLLect:GUIDed:CONNector:PORT{i}:SELect "{connectors[i-1]}"')
                 PNA.session.write(f'SENSe1:CORRection:COLLect:GUIDed:CKIT:PORT{i} "{calkits[i-1]}"')
-            
+                PNA.resource_status() 
+
             PNA.session.write("SENSe1:CORRection:PREFerence:ECAL:ORIentation:STATe 0")
             PNA.session.write("SENSe1:CORRection:COLLect:GUIDed:INITiate")
 
-            steps = int(PNA.session.query("SENSe1:CORRection:COLLect:GUIDed:STEPs?"))
+            PNA.SParam.total_steps = int(PNA.session.query("SENSe1:CORRection:COLLect:GUIDed:STEPs?"))
+            PNA.SParam.current_step = 0
 
-            # TODO: interact with oppened PNA.session
-            # BIIIIIIIG TODO
-            for i in range(1, steps+1):
-                print(PNA.session.query(f"SENSe1:CORRection:COLLect:GUIDed:DESCription? {i}"))
-                _ = input("Press enter when done") # TODO: interact with oppened PNA.session
-                PNA.session.write(f"SENSe1:CORRection:COLLect:GUIDed:ACQuire STAN{i}")
+            PNA.busy = False
+
+        def cal_step():
+            while PNA.busy: time.sleep(0.1)
+            PNA.busy = True
+            PNA.SParam.current_step += 1
+
+            ans: str 
+
+            if (PNA.SParam.current_step <=  PNA.SParam.total_steps):
+                ans = PNA.session.query(f"SENSe1:CORRection:COLLect:GUIDed:DESCription? {PNA.SParam.current_step}")
+            else:
+                ans = 'Nothing'
+
+
+            if (PNA.SParam.current_step <=  PNA.SParam.total_steps+1):
+                if (PNA.SParam.current_step != 1):
+                    PNA.session.write(f"SENSe1:CORRection:COLLect:GUIDed:ACQuire STAN{PNA.SParam.current_step-1}")
+
+            if (PNA.SParam.current_step >  PNA.SParam.total_steps):
+                PNA.session.write("SENSe1:CORRection:COLLect:GUIDed:SAVE")
+                if (PNA.SParam.save): 
+                    PNA.SParam.save_cal_set(my_cal_set="visa_calibration");
             
-            PNA.session.write("SENSe1:CORRection:COLLect:GUIDed:SAVE")
-            PNA.resource_status(PNA.session)
+            PNA.resource_status()
 
+            # print(f"Current step: {PNA.SParam.current_step}")
+            PNA.busy = False
+            if ans == None:
+                ans = 'Nothing'
+            return ans
+    
         def save_cal_set(my_cal_set: str = "visa_calibration") -> None:
             
+            while PNA.busy: time.sleep(0.1)
+            PNA.busy = True
+
             cal_set_names = PNA.session.query("SENSe1:CORRection:CSET:CATalog? NAME").replace('"', '').split(", ")
             if my_cal_set in cal_set_names:
                 PNA.session.write(f"SENSe1:CORRection:CSET:DELete '{my_cal_set}'")
-                PNA.resource_status(PNA.session)
+                PNA.resource_status()
             PNA.session.write(f"SENSe1:CORRection:CSET:COPY '{my_cal_set}'")
-            PNA.resource_status(PNA.session)
+            PNA.resource_status()
+
+            PNA.busy = False
 
     class ComPt:
 
@@ -171,15 +230,29 @@ class PNA:
             # # frequency
             # # start_power
             # # stop_power
+            
+            while PNA.busy: time.sleep(0.1)
+            PNA.busy = True
+
+            PNA.session.write("*CLS")
+            PNA.session.write("CALCulate:PARameter:DELete:ALL")
+            PNA.resource_status()
+
             PNA.session.write("SENSe1:SWEep:TYPE POWer")
             PNA.session.write(f"SOURce1:POWer:START {PNA.ComPt.start_power}")
             PNA.session.write(f"SOURce1:POWer:STOP {PNA.ComPt.stop_power}")
             PNA.session.write(f"SENSe1:FREQuency:FIXed {PNA.ComPt.frequency}")
             PNA.resource_status()
 
+            PNA.busy = False
+
         def parameter_config() -> None:
             # Requires one variable to be set:
             # # average
+            
+            while PNA.busy: time.sleep(0.1)
+            PNA.busy = True
+
             PNA.session.write("CALCulate1:PARameter:DEFine:EXTended 'ComPt', 'S21'")
             PNA.session.write("DISPlay:WINDow1:TRACe1:FEED 'ComPt'")
             PNA.session.write("CALCulate1:PARameter:SELect 'ComPt'")
@@ -206,21 +279,27 @@ class PNA:
             print(f'Marker Y?{PNA.session.query("CALCulate1:MARKer1:Y?")}')
             PNA.resource_status()
 
+            PNA.busy = False
+
         def plot_data() -> None:
             # Requires four variables to be set:
             # # frequency
             # # start_power
             # # stop_power
             # # offset
+            
+            while PNA.busy: time.sleep(0.1)
+            PNA.busy = True
+
             import matplotlib.pyplot as plt
             from datetime import datetime
             
             # params = PNA.session.query("CALCulate1:PARameter:CATalog?") # TODO: query to verify if parameters are corectly set
-            # PNA.resource_status()
             PNA.session.write("CALCulate1:PARameter:SELect 'ComPt'") 
             PNA.session.write("FORMat:DATA ASCII,0")
             data = PNA.session.query("CALCulate1:DATA? FDATA")
             PNA.resource_status()
+            PNA.busy = False
 
             data = data.split(",")
             delta = (PNA.ComPt.start_power - PNA.ComPt.stop_power) / len(data)
@@ -247,6 +326,7 @@ class PNA:
             filename = f"{timestamp}-measurement.txt"
 
             plt.savefig(f"{timestamp}-measurement.png")
+            plt.close()
             PNA.ComPt.last_image = f"{timestamp}-measurement.png"
             PNA.ComPt.last_datafile = f"{timestamp}-measurement.txt"
     
@@ -257,3 +337,4 @@ class PNA:
                 for i in range(len(data)):
                         file.write(f"\t{power[i]:.3e}\t{data[i]:.3e}\n")
                 file.write(f"END\n")
+

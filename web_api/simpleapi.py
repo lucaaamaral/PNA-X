@@ -25,7 +25,7 @@ class SimpleApi:
         '200': b'HTTP/1.1 200 OK\r\nServer: SimpleApi\r\n',
         '404': b'HTTP/1.1 404 Not Found\r\nServer: SimpleApi\r\n\r\n',
         '405': b'HTTP/1.1 405 Method Not Allowed\r\nServer: SimpleApi\r\n\r\n',
-        '405': b'HTTP/1.1 417 Expectation Failed\r\nServer: SimpleApi\r\n\r\n',
+        '417': b'HTTP/1.1 417 Expectation Failed\r\nServer: SimpleApi\r\n\r\n',
         '418': b"HTTP/1.1 418 I'm a teapot\r\nServer: SimpleApi\r\n\r\n",
         '400': b'HTTP/1.1 400 Bad Request\r\nServer: SimpleApi\r\n\r\n'
         }

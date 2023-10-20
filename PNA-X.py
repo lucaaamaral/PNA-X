@@ -2,7 +2,7 @@ import time, json, signal, logging, sys
 from web_api.simpleapi import SimpleApi
 from routines.SharedLib.PNA import PNA
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s:%(funcName)s:%(lineno)d - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(name)s:%(funcName)s:%(lineno)d - %(levelname)s - %(message)s")
 logging.root.name="PNA-X.py"
 
 def signal_handler(signum, frame):
@@ -53,8 +53,8 @@ def ComPt_html(payload:str):
 def getConnectorOpt(payload:str):
     print(f'Recebido payload: {payload}')
 
-    # conectores = PNA.queryConnector() # TODO uncomment     
-    conectores = ["opt1","opt2","opt3"]
+    # conectores = ["opt1","opt2","opt3"]
+    conectores = PNA.queryConnector()
     ans = ""
     for con in conectores:
         ans = ans + f',{{"name":"{con}"}}'
@@ -65,8 +65,8 @@ def getConnectorOpt(payload:str):
 def getCalkitOpt(payload:str):
     print(f'Recebido payload: {payload}')
 
-    # calkit = PNA.queryCalkit(payload) # TODO uncomment     
-    calkit = ["opt1","opt2","opt3"]
+    # calkit = ["opt1","opt2","opt3"]
+    calkit = PNA.queryCalkit(payload)
     ans = ""
     for con in calkit:
         ans = ans + f',{{"name":"{con}"}}'
@@ -77,19 +77,19 @@ def getCalkitOpt(payload:str):
 def getVisaAvailable(payload: str):
     print(f'Recebido payload: {payload}')
     ans:str = ''
-    for visa in  PNA.visaAvailable():
+    for visa in PNA.visaAvailable():
         ans = ans + f',{{"name":"{visa}"}}'
     ans = ans[1:]
     if (len(ans) == 0):
         ans = f'{{"name": "Error loading visa devices"}}'
-    
+    # print(ans)
     return SimpleApi.http_resource['json'] + f'[{ans}]'.encode('utf-8') + b'\r\n\r\n'
 
 def postVisaConnect(payload: str):
     print(f'Recebido payload: {payload}')
-    # PNA.initiate(payload) # TODO: uncoment
-    # error = PNA.queryError()
-    error = None
+
+    PNA.initiate(payload)
+    error = PNA.queryError()
     if error == None:
         return SimpleApi.http_header['200']
     else:
@@ -122,6 +122,7 @@ def start_sparam(payload: str):
         calibrate = data['calibrate']
         save = data['save']
 
+        PNA.SParam.save = save
 
         if not (init_freq_unit in ['Hz', 'kHz', 'MHz', 'GHz'] and end_freq_unit in ['Hz', 'kHz', 'MHz', 'GHz']):
             return SimpleApi.http_header['400']
@@ -153,18 +154,15 @@ def start_sparam(payload: str):
         PNA.SParam.configure(num=3, name='loss', meas='S12')
         PNA.SParam.configure(num=4, name='OutputRL', meas='S22')
 
-        if calibrate == "true":
+        if calibrate: 
+            PNA.SParam.guided_calibration(
+                connectors=[conn_1, conn_2, conn_3, conn_4], 
+                calkits=[ckit_1, ckit_2, ckit_3, ckit_4])
             # TODO: this function still requires waaaay much work to interact with the webpage - > code 100?
-            PNA.SParam.guided_calibration(connectors=[conn_1, conn_2, conn_3, conn_4], 
-                                        calkits=[ckit_1, ckit_2, ckit_3, ckit_4])
 
-        if save == "true":
-            PNA.SParam.save_cal_set(my_cal_set="visa_calibration"); 
     except Exception as e:
         return SimpleApi.http_header['417'] + str(e).encode('utf-8')
     
-    PNA.session.close()       
-
     if PNA.error == None:
         return SimpleApi.http_header['200']
     else:
@@ -174,11 +172,24 @@ def last_img (payload:str):
     print(f'Recebido payload: {payload}')
 
     try:
-        PNA.ComPt.last_image = 'web-pages/imagem.webp' # TODO: remove this line
+        # PNA.ComPt.last_image = 'web-pages/imagem.webp' # TODO: debug line
         with open(PNA.ComPt.last_image, 'rb') as file:
             return SimpleApi.http_resource['png'] + file.read()
     except: return SimpleApi.http_header['404']
 
+
+def getCalStep (payload:str):
+    print(f'Recebido payload: {payload}')
+
+    try:
+        ans = PNA.SParam.cal_step()
+        print(PNA.SParam.total_steps)
+        print(PNA.SParam.current_step)
+        if PNA.error:        
+            return SimpleApi.http_header['404'] + PNA.error.encode('utf-8')
+
+        return SimpleApi.http_resource['json'] + ans.encode('utf-8')
+    except Exception as e: return SimpleApi.http_header['404'] + str(e).encode('utf-8')
 
 def start_compt(payload: str):
     print(f'Recebido payload: {payload}')
@@ -186,6 +197,7 @@ def start_compt(payload: str):
     data = json.loads(payload)
 
     try:
+        # visa = data['visa'] # TODO: check if a sesssion to the instrument is active, if not, create one. For now, reload the page
         freq =         int(float(data['freq']))
         freq_unit =    data['freq_unit']
         average =      int(data['average'])
@@ -238,6 +250,7 @@ if __name__ == '__main__':
     server.configure_endpoints('POST', '/connectTo', postVisaConnect)
     server.configure_endpoints('GET', '/connector', getConnectorOpt)
     server.configure_endpoints('POST', '/calkit', getCalkitOpt)
+    server.configure_endpoints('GET', '/cal_step', getCalStep)
 
     # Start function
     server.configure_endpoints('POST', '/start_sparam', start_sparam)
@@ -251,3 +264,4 @@ if __name__ == '__main__':
         time.sleep(1)
 
 # TODO: error handling from visa to UI
+# TODO: test development flag to ease testing
