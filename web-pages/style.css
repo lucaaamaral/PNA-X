@@ -39,7 +39,7 @@ form {
     max-width: 800px;
     width: 100%;
     border-radius: 10px;
-
+    text-align: center;
     /* border: 1px solid #ccc; */
 }
 
@@ -96,9 +96,10 @@ button {
     margin: 20px 0 5px 0
 }
 
-/* Style for the modal */
-.modal {
-    display: none;
+/* Style for the modal TODO uncomment this */
+#modal {
+    display: none; 
+    /* display: flex; */
     align-items: center;
     justify-content: center;
     position: fixed;
@@ -113,12 +114,17 @@ button {
 }
 
 /* Style for the modal image */
-#modalImage {
+#modal img {
     margin: auto;
     max-width: 80%;
     max-height: 80%;
     padding: 20px;
     /* border: 1px solid #ccc; */
+}
+
+#modal h1 {
+    margin-top: 50px;
+    margin-bottom: 50px;
 }
 
 /* Style for the close button */

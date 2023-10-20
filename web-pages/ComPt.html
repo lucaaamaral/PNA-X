@@ -10,8 +10,8 @@
 
 <body>
 
-    <h1>PNA-X SParams</h1> 
-    <h2>measure and calibration</h2>
+    <h1>PNA-X ComPt</h1> 
+    <h2>measurement</h2>
 
     <form method="POST" onsubmit="event.preventDefault(); sendForm();">
         <div class="form-div">
@@ -45,11 +45,11 @@
             <div class="side-div">
                 <div class="input-div">
                     <label for="start_pow">Start power (dB)</label>
-                    <input type="number" step="1" min="0" id="start_pow" name="start_pow" required>
+                    <input type="number" step="1" min="-50" max="10" id="start_pow" name="start_pow" required>
                 </div>
                     <div class="input-div">
                         <label for="stop_pow">Stop power (dB):</label>
-                        <input type="number" step="1" min="0" id="stop_pow" name="stop_pow" required>
+                        <input type="number" step="1" min="-50"max="10" id="stop_pow" name="stop_pow" required>
                     </select>
                 </div>
             </div>
@@ -70,10 +70,11 @@
 
     <button id="openDialog" style="display: none;">Open Image</button>
 
-    <div id="Modal" class="modal">
+    <div id="modal" class="modal">
         <div class="form-div">
                 <span class="close" id="closeModal">&times;</span>
                 <img id="modalImage" src="" alt="Image">
+                <h1 id="modalText">Imagem carregada com sucesso</h1>
         </div>
     </div>
 
@@ -85,7 +86,7 @@
     modal()
 
     function modal() {
-        var modal = document.getElementById('Modal');
+        var modal = document.getElementById('modal');
         var modalImage = document.getElementById('modalImage');
         var closeButton = document.getElementById('closeModal');
         var openButton = document.getElementById('openDialog');
@@ -105,8 +106,6 @@
             }
         }
     }
-
-
 
     function getVisa(){
         selectVisa = document.getElementById("visa")
@@ -174,12 +173,20 @@
             Headers: { "Content-Type": "application/json" },
             body: jsonData
         })
+        .then ( response => {
+            document.getElementById('modal').style.display = 'flex';
+            if (response.status == '200') {
+                document.getElementById('modalImage').src = '/last_img';
+                document.getElementById("modalText").innerHTML = 'P1dB measurement'
+            }
+            else {
+                document.getElementById('modalImage').style.display = 'none';
+                document.getElementById("modalText").innerHTML = 'Failed to load image'
+                throw "Expected 200 but received " + response.status;
+            }
+        })
         .catch(error => {
             console.error("Error: ", error);
         });
-        var modal = document.getElementById('Modal');
-        var modalImage = document.getElementById('modalImage');
-        modal.style.display = 'flex';
-        modalImage.src='/last_img'
     };
 </script>

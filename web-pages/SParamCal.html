@@ -57,7 +57,7 @@
                 </div>
                     <div class="input-div">
                         <label for="power">Power (dB):</label>
-                        <input type="number" step="1" min="0" id="power" name="power" required>
+                        <input type="number" step="1" min="-50" max="10" id="power" name="power" required>
                     </select>
                 </div>
             </div>
@@ -149,13 +149,52 @@
     </div><br>
     </form>
 
-    
+    <div id="modal" class="modal">
+        <div class="form-div">
+                <span class="close" id="closeModal" onclick="closeModal()">&times;</span>
+                <h1 id="modalText">TODO: Inserir javascript aqui -> backend já "pronto" </h1>
+                <button type="submit" id="nextButton" onclick="getNextStep()">Next step...</button>
+    </div>
+    </div>
+
 </body>
 </html>
 
 <script>
     portVisibility()
     getVisa()
+    modal()
+
+    function modal () {
+        modal = document.getElementById('modal');
+        window.onclick = function(event) {
+            if (event.target === modal) { closeModal(); }
+        }
+    }
+
+     function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    function getNextStep() {
+        var modalText = document.getElementById('modalText');
+
+        const myurl = new URL(window.location.href);
+        const baseUrl = `${myurl.protocol}//${myurl.host}` + '/cal_step';
+        console.log('Querying for the next calibration step -> ' + `${baseUrl}`);
+
+        fetch(baseUrl)
+        .then(response => response.text())
+        .then(data => {
+            if (data != "Nothing"){ modalText.innerHTML = data }
+            else { modalText.innerHTML = "Calibration performed" }
+            console.log('Anwer received: ', data);
+        })
+        .catch(error => {
+            console.error('Data fetch error ', error);
+        })
+    }
+
     // TODO: extra window to interact with backend and make steps to calibration
     function portVisibility(){
         console.log('Hiding port boxes')
@@ -262,6 +301,14 @@
             method: 'POST',
             body: `${visaDevName}`
         })
+        .then( response => {
+            if (response.status == '200') {
+                fillConnector();
+            }
+            else {
+                throw "Expected 200 but received " + response.status;
+            }
+        })
         .catch(error => {
             console.error('ConnectTo error:', error);
         })
@@ -328,10 +375,16 @@
             Headers: { "Content-Type": "application/json" },
             body: jsonData
         })
-        .then(response => response.json())
-        .then(data => {
-
-            console.log(data);
+        .then( _ => {
+            console.log(document.getElementById("calibrate").checked)
+            
+            if (document.getElementById("calibrate").checked) {
+                document.getElementById('modal').style.display = 'flex';
+                getNextStep();
+            }
+            else {
+                console.log("Calibrate ==  false")
+            }
         })
         .catch(error => {
             console.error("Error: ", error);
