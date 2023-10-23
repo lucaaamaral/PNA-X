@@ -198,7 +198,7 @@ def start_compt(payload: str):
 
     try:
         # visa = data['visa'] # TODO: check if a sesssion to the instrument is active, if not, create one. For now, reload the page
-        freq =         int(float(data['freq']))
+        freq =         float(data['freq'])
         freq_unit =    data['freq_unit']
         average =      int(data['average'])
         start_pow =    int(data['start_pow'])
@@ -250,10 +250,10 @@ if __name__ == '__main__':
     server.configure_endpoints('POST', '/connectTo', postVisaConnect)
     server.configure_endpoints('GET', '/connector', getConnectorOpt)
     server.configure_endpoints('POST', '/calkit', getCalkitOpt)
-    server.configure_endpoints('GET', '/cal_step', getCalStep)
 
     # Start function
     server.configure_endpoints('POST', '/start_sparam', start_sparam)
+    server.configure_endpoints('GET', '/cal_step', getCalStep)
     server.configure_endpoints('POST', '/start_compt', start_compt)
 
 

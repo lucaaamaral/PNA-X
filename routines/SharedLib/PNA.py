@@ -171,7 +171,7 @@ class PNA:
 
             PNA.busy = False
 
-        def cal_step():
+        def cal_step() -> str:
             while PNA.busy: time.sleep(0.1)
             PNA.busy = True
             PNA.SParam.current_step += 1
@@ -195,7 +195,6 @@ class PNA:
             
             PNA.resource_status()
 
-            # print(f"Current step: {PNA.SParam.current_step}")
             PNA.busy = False
             if ans == None:
                 ans = 'Nothing'
@@ -302,15 +301,13 @@ class PNA:
             PNA.busy = False
 
             data = data.split(",")
-            delta = (PNA.ComPt.start_power - PNA.ComPt.stop_power) / len(data)
+            delta = (PNA.ComPt.stop_power - PNA.ComPt.start_power) / len(data)
             ComPt = []
             power = []
             for i in range(len(data)):
                 data[i] = float(data[i]) + PNA.ComPt.offset
                 ComPt.append(data[0]-1)
                 power.append(PNA.ComPt.start_power + delta*i)
-
-            # print(data)
 
             plt.plot(power, data, label="measured gain")
             plt.plot(power, ComPt, label="compression target")
